@@ -14,7 +14,7 @@ module counter (
 
     // Decode the count to signals in the register
     always @(*) begin
-        T = 4'b0000;
+        t = 4'b0000;
         case (count)
             2'b00: T[0] = 1'b1;
             2'b01: T[1] = 1'b1;
