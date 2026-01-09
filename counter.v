@@ -1,4 +1,4 @@
-module StepCounter (
+module counter (
     input clk,
     input clr,
     output reg [3:0] T  //register for T0, T1, T2 and T3
