@@ -1,7 +1,7 @@
 module counter (
     input clk,
     input clr,
-    output reg [3:0] T  //register for T0, T1, T2 and T3
+    output reg [3:0] t  //register for T0, T1, T2 and T3
 );
     reg [1:0] count = 2'b00;
 
