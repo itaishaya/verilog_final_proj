@@ -12,6 +12,11 @@ module tb_top;
     wire [REG_WIDTH-1:0] bus;
     wire done;
 
+    reg [INSTRUCTION_WIDTH-1:0] curr_instr;
+    reg [REG_WIDTH-1:0] reg_model [0:7];
+    reg [REG_WIDTH-1:0] exp_bus;
+    integer i;
+
     top #(
         .REG_WIDTH(REG_WIDTH),
         .INSTRUCTION_WIDTH(INSTRUCTION_WIDTH),
@@ -26,6 +31,78 @@ module tb_top;
     );
 
     always #5 clk = ~clk;
+
+    // Helper to read modeled register values.
+    function [REG_WIDTH-1:0] reg_read(input [2:0] idx);
+        begin
+            case (idx)
+                3'b000: reg_read = reg_model[0];
+                3'b001: reg_read = reg_model[1];
+                3'b010: reg_read = reg_model[2];
+                3'b011: reg_read = reg_model[3];
+                3'b100: reg_read = reg_model[4];
+                3'b101: reg_read = reg_model[5];
+                3'b110: reg_read = reg_model[6];
+                3'b111: reg_read = reg_model[7];
+            endcase
+        end
+    endfunction
+
+    // Instruction decode from the last fetched instruction.
+    wire [2:0] cmd   = curr_instr[INSTRUCTION_WIDTH-1:INSTRUCTION_WIDTH-3];
+    wire [2:0] dest  = curr_instr[5:3];
+    wire [2:0] src   = curr_instr[2:0];
+
+    localparam [2:0] CMD_MV  = 3'b000;
+    localparam [2:0] CMD_MVI = 3'b001;
+    localparam [2:0] CMD_ADD = 3'b010;
+    localparam [2:0] CMD_SUB = 3'b011;
+
+    // Track instructions and expected bus values for visibility.
+    always @(negedge clk) begin
+        if (!rst) begin
+            curr_instr <= {INSTRUCTION_WIDTH{1'b0}};
+            exp_bus <= {REG_WIDTH{1'b0}};
+            for (i = 0; i < 8; i = i + 1) begin
+                reg_model[i] <= {REG_WIDTH{1'b0}};
+            end
+        end else begin
+            if (dut.COUNTER.t == 2'b00) begin
+                curr_instr <= din[INSTRUCTION_WIDTH-1:0];
+            end
+
+            case (cmd)
+                CMD_MV: begin
+                    if (dut.COUNTER.t == 2'b01) begin
+                        exp_bus <= reg_read(src);
+                        $display("instr=MV  dest=R%0d src=R%0d exp_bus=%h bus=%h", dest, src, reg_read(src), bus);
+                        if (done) reg_model[dest] <= reg_read(src);
+                    end
+                end
+                CMD_MVI: begin
+                    if (dut.COUNTER.t == 2'b01) begin
+                        exp_bus <= din;
+                        $display("instr=MVI dest=R%0d imm=%h exp_bus=%h bus=%h", dest, din, din, bus);
+                        if (done) reg_model[dest] <= din;
+                    end
+                end
+                CMD_ADD: begin
+                    if (dut.COUNTER.t == 2'b11) begin
+                        exp_bus <= reg_read(dest) + reg_read(src);
+                        $display("instr=ADD dest=R%0d src=R%0d exp_bus=%h bus=%h", dest, src, reg_read(dest) + reg_read(src), bus);
+                        if (done) reg_model[dest] <= reg_read(dest) + reg_read(src);
+                    end
+                end
+                CMD_SUB: begin
+                    if (dut.COUNTER.t == 2'b11) begin
+                        exp_bus <= reg_read(dest) - reg_read(src);
+                        $display("instr=SUB dest=R%0d src=R%0d exp_bus=%h bus=%h", dest, src, reg_read(dest) - reg_read(src), bus);
+                        if (done) reg_model[dest] <= reg_read(dest) - reg_read(src);
+                    end
+                end
+            endcase
+        end
+    end
 
     task wait_for_t(input [COUNTER_WIDTH-1:0] tval);
         begin
@@ -140,6 +217,15 @@ module tb_top;
         issue_addsub(3'b010, 3'b100, 3'b101, 16'h0008);
         // R4 <- R4 - R5 = 0x0005
         issue_addsub(3'b011, 3'b100, 3'b101, 16'h0005);
+
+        // R6 <- 0x00C3
+        issue_mvi(3'b110, 16'h00C3);
+        // R7 <- R6
+        issue_mv(3'b111, 3'b110, 16'h00C3);
+        // R6 <- R6 + R7 = 0x0186
+        issue_addsub(3'b010, 3'b110, 3'b111, 16'h0186);
+        // R7 <- R7 - R6 = 0xFF3D (0x00C3 - 0x0186)
+        issue_addsub(3'b011, 3'b111, 3'b110, 16'hFF3D);
 
         $display("tb_top completed");
         $stop;
