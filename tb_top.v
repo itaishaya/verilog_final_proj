@@ -29,9 +29,7 @@ module tb_top;
 
     task wait_for_t(input [COUNTER_WIDTH-1:0] tval);
         begin
-            while (dut.COUNTER.t !== tval) begin
-                @(posedge clk);
-            end
+            while (dut.COUNTER.t !== tval) @(negedge clk);
         end
     endtask
 
@@ -43,11 +41,9 @@ module tb_top;
         begin
             instr = {3'b001, dest, 3'b000};
             wait_for_t(2'b00);
-            @(negedge clk);
             din = {{(REG_WIDTH-INSTRUCTION_WIDTH){1'b0}}, instr};
 
             wait_for_t(2'b01);
-            @(negedge clk);
             din = imm;
             #1;
             if (bus !== imm) begin
@@ -69,7 +65,6 @@ module tb_top;
         begin
             instr = {3'b000, dest, src};
             wait_for_t(2'b00);
-            @(negedge clk);
             din = {{(REG_WIDTH-INSTRUCTION_WIDTH){1'b0}}, instr};
 
             wait_for_t(2'b01);
@@ -94,7 +89,6 @@ module tb_top;
         begin
             instr = {cmd, dest, src};
             wait_for_t(2'b00);
-            @(negedge clk);
             din = {{(REG_WIDTH-INSTRUCTION_WIDTH){1'b0}}, instr};
 
             wait_for_t(2'b11);
@@ -148,7 +142,7 @@ module tb_top;
         issue_addsub(3'b011, 3'b100, 3'b101, 16'h0005);
 
         $display("tb_top completed");
-        $finish;
+        $stop;
     end
 
 endmodule

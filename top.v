@@ -146,7 +146,9 @@ module top
     );
 
     //* IR register - before control unit
-    register IR(
+    register #(
+        .REG_WIDTH(INSTRUCTION_WIDTH)
+    ) IR(
         .clk(clk),
         .rst(rst),
         .enable(ir_in),
