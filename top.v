@@ -20,6 +20,7 @@ module top
     wire[INSTRUCTION_WIDTH-1:0] ir_data;
 
     wire[REG_WIDTH-1:0] bus_sig;
+    wire add_sub;
 
 
     //! Control unit signals
@@ -138,7 +139,7 @@ module top
 
     //*ALU instance
     addsub ADDSUB (
-        .add_sub(),
+        .add_sub(add_sub),
         .a(a_out),
         .b(bus_sig),
         .c(alu_out)
@@ -219,7 +220,8 @@ module top
         .r7_in(r7_in),
         .a_in(a_in),
         .g_in(g_in),
-        .ir_in(ir_in)
+        .ir_in(ir_in),
+        .add_sub(add_sub)
 	);
     
     

@@ -84,11 +84,38 @@ module tb_top;
         end
     endtask
 
+    task issue_addsub(
+        input [2:0] cmd,
+        input [2:0] dest,
+        input [2:0] src,
+        input [REG_WIDTH-1:0] expected_result
+    );
+        reg [INSTRUCTION_WIDTH-1:0] instr;
+        begin
+            instr = {cmd, dest, src};
+            wait_for_t(2'b00);
+            @(negedge clk);
+            din = {{(REG_WIDTH-INSTRUCTION_WIDTH){1'b0}}, instr};
+
+            wait_for_t(2'b11);
+            #1;
+            if (bus !== expected_result) begin
+                $fatal(1, "ADD/SUB bus mismatch: expected %h, got %h", expected_result, bus);
+            end
+            if (!done) begin
+                $fatal(1, "ADD/SUB done not asserted at t3");
+            end
+            @(posedge clk);
+        end
+    endtask
+
     initial begin
         clk = 1'b0;
         rst = 1'b0;
         run = 1'b0;
         din = {REG_WIDTH{1'b0}};
+        $monitor("t=%0t clk=%b rst=%b run=%b din=%h bus=%h done=%b tstep=%b",
+                 $time, clk, rst, run, din, bus, done, dut.COUNTER.t);
 
         // Reset registers.
         repeat (2) @(posedge clk);
@@ -110,6 +137,15 @@ module tb_top;
         issue_mvi(3'b010, 16'h00A5);
         // R3 <- R2
         issue_mv(3'b011, 3'b010, 16'h00A5);
+
+        // R4 <- 0x0005
+        issue_mvi(3'b100, 16'h0005);
+        // R5 <- 0x0003
+        issue_mvi(3'b101, 16'h0003);
+        // R4 <- R4 + R5 = 0x0008
+        issue_addsub(3'b010, 3'b100, 3'b101, 16'h0008);
+        // R4 <- R4 - R5 = 0x0005
+        issue_addsub(3'b011, 3'b100, 3'b101, 16'h0005);
 
         $display("tb_top completed");
         $finish;

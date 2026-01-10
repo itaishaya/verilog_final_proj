@@ -9,7 +9,8 @@ module control_unit
     input wire [COUNTER_WIDTH-1:0] t,           // time steps t0, t1, t2, t3
     output reg clr, done,
     output reg r0_out, r1_out, r2_out, r3_out, r4_out, r5_out, r6_out, r7_out, g_out, din_out,
-    output reg r0_in, r1_in, r2_in, r3_in, r4_in, r5_in, r6_in, r7_in, a_in, g_in, ir_in
+    output reg r0_in, r1_in, r2_in, r3_in, r4_in, r5_in, r6_in, r7_in, a_in, g_in, ir_in,
+    output reg add_sub
 );
 
     localparam INSTRUCTION_PART_WIDTH = 3;
@@ -31,6 +32,7 @@ module control_unit
         {r0_in, r1_in, r2_in, r3_in, r4_in, r5_in, r6_in, r7_in, a_in, g_in, ir_in} = 11'b0;
         done = 1'b0;
         clr = 1'b0;
+        add_sub = 1'b0;
 
         case (t)
             2'b00: begin // t0: instruction fetch phase
@@ -90,6 +92,7 @@ module control_unit
                     3'b100: r4_out = 1'b1; 3'b101: r5_out = 1'b1;
                     3'b110: r6_out = 1'b1; 3'b111: r7_out = 1'b1;
                 endcase
+                add_sub = (cmd == add);
                 g_in = 1'b1;
             end
 
