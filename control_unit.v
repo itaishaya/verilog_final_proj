@@ -4,7 +4,7 @@ module control_unit
     parameter integer COUNTER_WIDTH = 2
 )
 (
-    input wire clk, rst, run,
+    input wire rst, run,
     input wire [INSTRUCTION_WIDTH-1:0] ir,          // instruction format: [8:6] III (cmd), [5:3] xxx (dest), [2:0] yyy (source)
     input wire [COUNTER_WIDTH-1:0] t,           // time steps t0, t1, t2, t3
     output reg clr, done,
@@ -34,7 +34,9 @@ module control_unit
         clr = 1'b0;
         add_sub = 1'b0;
 
-        case (t)
+        if (!rst) begin
+            clr = 1'b1;
+        end else case (t)
             2'b00: begin // t0: instruction fetch phase
                 ir_in = 1'b1;
                 din_out = 1'b1; // load instruction from din into ir

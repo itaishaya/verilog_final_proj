@@ -185,7 +185,6 @@ module top
 
     //* Control unit connections
 	control_unit CONTROL_UNIT (
-	    .clk(clk),
         .rst(rst),
         .run(run),
 
